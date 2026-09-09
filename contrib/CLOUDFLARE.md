@@ -100,6 +100,78 @@ curl -s "https://nominatim.example.com/search?q=columbus&format=json" \
 
 Service tokens are **header-only** — they cannot be passed as a query parameter.
 
+## Querying the API
+
+The service token goes in the `CF-Access-Client-Id` / `CF-Access-Client-Secret`
+**headers** on every request. Everything after that is the standard
+[Nominatim API](https://nominatim.org/release-docs/latest/api/Overview/) — the
+Cloudflare layer is transparent.
+
+### Via URL (curl)
+
+```bash
+BASE=https://nominatim.example.com
+CID=<CLIENT_ID>
+CSEC=<CLIENT_SECRET>
+
+# forward geocode
+curl -s -G "$BASE/search" \
+  -H "CF-Access-Client-Id: $CID" -H "CF-Access-Client-Secret: $CSEC" \
+  --data-urlencode "q=125 E Broad St, Columbus, OH" \
+  --data-urlencode "format=jsonv2" \
+  --data-urlencode "addressdetails=1" \
+  --data-urlencode "limit=1"
+
+# reverse geocode
+curl -s -G "$BASE/reverse" \
+  -H "CF-Access-Client-Id: $CID" -H "CF-Access-Client-Secret: $CSEC" \
+  --data-urlencode "lat=39.9612" --data-urlencode "lon=-83.0007" \
+  --data-urlencode "format=jsonv2"
+
+# health check
+curl -s "$BASE/status?format=json" \
+  -H "CF-Access-Client-Id: $CID" -H "CF-Access-Client-Secret: $CSEC"
+```
+
+The full request URL is just
+`https://nominatim.example.com/search?q=...&format=jsonv2&limit=1` — the auth is
+carried only in the headers, never the query string.
+
+### Via Python (`requests`)
+
+```python
+import requests
+
+BASE = "https://nominatim.example.com"
+session = requests.Session()
+session.headers.update({
+    "CF-Access-Client-Id": "<CLIENT_ID>",
+    "CF-Access-Client-Secret": "<CLIENT_SECRET>",
+    "User-Agent": "morpc-geocoder/1.0",
+})
+
+# forward geocode
+r = session.get(f"{BASE}/search", params={
+    "q": "125 E Broad St, Columbus, OH",
+    "format": "jsonv2",
+    "addressdetails": 1,
+    "limit": 1,
+}, timeout=30)
+r.raise_for_status()
+hit = r.json()[0]
+print(hit["lat"], hit["lon"], hit["display_name"])
+
+# reverse geocode
+r = session.get(f"{BASE}/reverse", params={
+    "lat": 39.9612, "lon": -83.0007, "format": "jsonv2",
+}, timeout=30)
+r.raise_for_status()
+print(r.json()["display_name"])
+```
+
+A `403` response means the token is missing, wrong, or not allowed by the Access
+policy; `429` means the WAF rate limit tripped (honour the `Retry-After` header).
+
 ## 8. Recommended extra: rate limiting
 
 Even with a valid token, a client can hammer the database. Add a WAF rate-limiting
