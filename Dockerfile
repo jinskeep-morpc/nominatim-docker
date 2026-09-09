@@ -1,4 +1,4 @@
-ARG NOMINATIM_VERSION=5.2.0
+ARG NOMINATIM_VERSION=5.3.2
 ARG USER_AGENT=mediagis/nominatim-docker:${NOMINATIM_VERSION}
 
 FROM ubuntu:24.04 AS build
@@ -61,7 +61,7 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked pip install --brea
     falcon \
     uvicorn \
     gunicorn \
-    nominatim-api
+    nominatim-api==$NOMINATIM_VERSION
 
 
 # remove build-only packages

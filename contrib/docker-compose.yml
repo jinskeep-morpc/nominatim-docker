@@ -1,12 +1,12 @@
 services:
     nominatim:
         container_name: nominatim
-        image: mediagis/nominatim:5.1
+        image: mediagis/nominatim:5.3
         # No ports published to the host. The only path in is the Cloudflare
         # tunnel (cloudflared -> nominatim:8080 over the private network below).
         environment:
             # PBF_PATH: /nominatim/data/us-latest.osm.pbf
-            # see https://github.com/mediagis/nominatim-docker/tree/master/5.2#configuration for more options
+            # see https://github.com/mediagis/nominatim-docker/tree/master/5.3#configuration for more options
             PBF_URL: https://download.geofabrik.de/north-america/us/ohio-latest.osm.pbf
             REPLICATION_URL: https://download.geofabrik.de/north-america/us/ohio-updates/
             NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:?set NOMINATIM_PASSWORD in contrib/.env}
