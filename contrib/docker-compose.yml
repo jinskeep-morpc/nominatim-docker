@@ -1,19 +1,41 @@
-version: "3"
-
 services:
     nominatim:
         container_name: nominatim
         image: mediagis/nominatim:5.3
-        ports:
-            - "8080:8080"
+        # No ports published to the host. The only path in is the Cloudflare
+        # tunnel (cloudflared -> nominatim:8080 over the private network below).
         environment:
+            # PBF_PATH: /nominatim/data/us-latest.osm.pbf
             # see https://github.com/mediagis/nominatim-docker/tree/master/5.3#configuration for more options
-            PBF_URL: https://download.geofabrik.de/europe/monaco-latest.osm.pbf
-            REPLICATION_URL: https://download.geofabrik.de/europe/monaco-updates/
-            NOMINATIM_PASSWORD: very_secure_password
+            PBF_URL: https://download.geofabrik.de/north-america/us/ohio-latest.osm.pbf
+            REPLICATION_URL: https://download.geofabrik.de/north-america/us/ohio-updates/
+            NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:?set NOMINATIM_PASSWORD in contrib/.env}
         volumes:
-            - nominatim-data:/var/lib/postgresql/16/main
+            - type: bind
+              source: /data/db
+              target: /var/lib/postgresql/16/main
+            - type: bind
+              source: /data/flatnode
+              target: /nominatim/flatnode
         shm_size: 1gb
+        networks:
+            - edge
+        restart: unless-stopped
+
+    cloudflared:
+        container_name: cloudflared
+        image: cloudflare/cloudflared:latest
+        command: tunnel --no-autoupdate run
+        environment:
+            TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:?set CF_TUNNEL_TOKEN in contrib/.env}
+        networks:
+            - edge
+        depends_on:
+            - nominatim
+        restart: unless-stopped
+
+networks:
+    edge:
 
 volumes:
     nominatim-data:
