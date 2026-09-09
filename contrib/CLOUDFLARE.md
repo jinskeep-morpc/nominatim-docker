@@ -161,12 +161,35 @@ r.raise_for_status()
 hit = r.json()[0]
 print(hit["lat"], hit["lon"], hit["display_name"])
 
+# forward geocode, structured params (more reliable for known addresses;
+# do NOT combine these with `q`)
+r = session.get(f"{BASE}/search", params={
+    "street": "125 E Broad St",
+    "city": "Columbus",
+    "state": "Ohio",
+    "postalcode": "43215",
+    "country": "United States",
+    "format": "jsonv2",
+    "addressdetails": 1,
+    "limit": 1,
+}, timeout=30)
+r.raise_for_status()
+hit = r.json()[0]
+print(hit["lat"], hit["lon"], hit["display_name"])
+
 # reverse geocode
 r = session.get(f"{BASE}/reverse", params={
     "lat": 39.9612, "lon": -83.0007, "format": "jsonv2",
 }, timeout=30)
 r.raise_for_status()
 print(r.json()["display_name"])
+```
+
+Structured search accepts `street`, `city`, `county`, `state`, `country`, and
+`postalcode`. The same works as a URL:
+
+```
+https://nominatim.example.com/search?street=125+E+Broad+St&city=Columbus&state=Ohio&postalcode=43215&country=United+States&format=jsonv2&limit=1
 ```
 
 A `403` response means the token is missing, wrong, or not allowed by the Access
