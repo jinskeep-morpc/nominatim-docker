@@ -10,6 +10,8 @@ services:
             PBF_URL: https://download.geofabrik.de/north-america/us/ohio-latest.osm.pbf
             REPLICATION_URL: https://download.geofabrik.de/north-america/us/ohio-updates/
             NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:?set NOMINATIM_PASSWORD in contrib/.env}
+            # Cap true concurrency (and thus Postgres load); default is one per CPU core.
+            GUNICORN_WORKERS: 4
         volumes:
             - type: bind
               source: /data/db
